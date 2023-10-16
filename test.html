@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Tic Tac Toe Game</title>
+    <style>
+        body { margin: 0; }
+    </style>
+</head>
+<body>
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/110/three.min.js"></script>
+
+    <script>
+/*import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+const controls = new OrbitControls( camera, renderer.domElement );
+
+//controls.update() must be called after any manual changes to the camera's transform
+camera.position.set( 0, 20, 100 );
+controls.update();*/
+
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+document.body.appendChild(renderer.domElement);
+
+
+const scene = new THREE.Scene();
+
+//bgm
+var audio =new Audio('music.mp3');
+
+audio.loop=true;
+audio.play();
+
+// Create a camera
+const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+camera.position.z = 5;
+
+// Create grid cells
+const gridSize = 3;
+const cellSize = 1;
+const gapSize = 0.2; // Increase the value to increase the gap between cells
+const gridWidth = gridSize * (cellSize + gapSize);
+const cells = [];
+
+const colors = [0xff0000, 0x00ff00]; // Define the alternate colors here
+const colorNames = ['Red', 'Green']; // Define the color names here
+let colorIndex = 0;
+let isGameOver = false;
+
+for (let i = 0; i < gridSize; i++) {
+  for (let j = 0; j < gridSize; j++) {
+    const geometry = new THREE.BoxGeometry(cellSize, cellSize, 0.1);
+    const material = new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide });
+    const cell = new THREE.Mesh(geometry, material);
+    cell.position.set(
+      (j - gridSize / 2) * (cellSize + gapSize),
+      (i - gridSize / 2) * (cellSize + gapSize),
+      0
+    );
+    cells.push(cell);
+    scene.add(cell);
+
+    // Functions to toggle color
+    const toggleColor = () => {
+      if (isGameOver) return;
+      const currentColor = colors[colorIndex];
+      if (cell.material.color.getHex() !== 0xffffff) return;
+      cell.material.color.setHex(currentColor);
+      checkGameOver(); // Check if the game is over after each click
+      colorIndex = (colorIndex + 1) % colors.length;
+    };
+
+    // Keyboard event listeners
+    window.addEventListener('keydown', (event) => {
+      if (event.key === ' ' && cell.material.color.getHex() === 0xffffff) {
+        toggleColor();
+      }
+    });
+
+    // Add click event listener
+    cell.onClick = function () {
+      if (cell.material.color.getHex() === 0xffffff) {
+        toggleColor();
+      }
+      console.log(`Clicked on cell (${i}, ${j})`);
+      // Add your logic here for handling the click event
+    };
+
+    cell.onHover = function () {
+      // Add your logic here for handling the hover event
+    };
+  }
+}
+
+// Create the frame
+const frameGeometry = new THREE.BoxGeometry(gridWidth, gridWidth, 0.1);
+const frameMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0 });
+const frame = new THREE.Mesh(frameGeometry, frameMaterial);
+scene.add(frame);
+
+// Handle mouse click events
+const raycaster = new THREE.Raycaster();
+const mouse = new THREE.Vector2();
+
+function onMouseClick(event) {
+  event.preventDefault();
+
+  // Calculate mouse pos reltve to the render elemnt
+  mouse.x = (event.clientX / renderer.domElement.clientWidth) * 2 - 1;
+  mouse.y = -(event.clientY / renderer.domElement.clientHeight) * 2 + 1;
+
+  // Raycast from camera to intersected objects
+  raycaster.setFromCamera(mouse, camera);
+  const intersects = raycaster.intersectObjects(cells);
+
+  if (intersects.length > 0) {
+    intersects[0].object.onClick();
+  }
+}
+
+window.addEventListener('click', onMouseClick, false);
+
+// Check if the game is over
+function checkGameOver() {
+  const verticalWin = checkVerticalWin();
+  const horizontalWin = checkHorizontalWin();
+  const diagonalWin = checkDiagonalWin();
+
+  if (verticalWin || horizontalWin || diagonalWin) {
+    isGameOver = true;
+    alert(`${colorNames[colorIndex]} is the winner!`);
+
+  }
+}
+
+// Check for vertical win
+function checkVerticalWin() {
+  for (let i = 0; i < gridSize; i++) {
+    for (let j = 0; j < gridSize - 2; j++) {
+      const cell1 = cells[i * gridSize + j];
+      const cell2 = cells[i * gridSize + j + 1];
+      const cell3 = cells[i * gridSize + j + 2];
+
+      if (
+        cell1.material.color.getHex() !== 0xffffff &&
+        cell1.material.color.getHex() === cell2.material.color.getHex() &&
+        cell2.material.color.getHex() === cell3.material.color.getHex()
+      ) {
+        return colorNames[colorIndex];
+      }
+    }
+  }
+  return false;
+}
+
+// Check for horizontal win
+function checkHorizontalWin() {
+  for (let i = 0; i < gridSize - 2; i++) {
+    for (let j = 0; j < gridSize; j++) {
+      const cell1 = cells[i * gridSize + j];
+      const cell2 = cells[(i + 1) * gridSize + j];
+      const cell3 = cells[(i + 2) * gridSize + j];
+
+      if (
+        cell1.material.color.getHex() !== 0xffffff &&
+        cell1.material.color.getHex() === cell2.material.color.getHex() &&
+        cell2.material.color.getHex() === cell3.material.color.getHex()
+      ) {
+        return colorNames[colorIndex];
+      }
+    }
+  }
+  return false;
+}
+
+// Check for diagonal win
+function checkDiagonalWin() {
+  for (let i = 0; i < gridSize - 2; i++) {
+    for (let j = 0; j < gridSize - 2; j++) {
+      const cell1 = cells[i * gridSize + j];
+      const cell2 = cells[(i + 1) * gridSize + j + 1];
+      const cell3 = cells[(i + 2) * gridSize + j + 2];
+
+      if (
+        cell1.material.color.getHex() !== 0xffffff &&
+        cell1.material.color.getHex() === cell2.material.color.getHex() &&
+        cell2.material.color.getHex() === cell3.material.color.getHex()
+      ) {
+        return colorNames[colorIndex];
+      }
+    }
+
+    for (let j = gridSize - 1; j >= 2; j--) {
+      const cell1 = cells[i * gridSize + j];
+      const cell2 = cells[(i + 1) * gridSize + j - 1];
+      const cell3 = cells[(i + 2) * gridSize + j - 2];
+
+      if (
+        cell1.material.color.getHex() !== 0xffffff &&
+        cell1.material.color.getHex() === cell2.material.color.getHex() &&
+        cell2.material.color.getHex() === cell3.material.color.getHex()
+      ) {
+        return colorNames[colorIndex];
+      }
+    }
+  }
+  return false;
+}
+
+
+function animate() {
+  requestAnimationFrame(animate);
+
+  // Rotate the cells
+  cells.forEach((cell) => {
+    cell.rotation.x += 0.01;
+    cell.rotation.y += 0.01;
+  });
+
+  renderer.render(scene, camera);
+}
+
+animate();
+</script>
+</body>
+</html>
